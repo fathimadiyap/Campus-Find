@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CampusFind - Lost & Found | Institute of Engineering and Technology, Calicut University</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased selection:bg-blue-100 selection:text-blue-700">
+
+    <!-- Toast Notification Container (Replaces alert()) -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none max-w-[90vw]"></div>
+
+    <!-- Header -->
+    <header class="bg-white/90 backdrop-blur-md border-b border-slate-200/80 sticky top-0 z-30">
+        <div class="max-w-6xl mx-auto px-4 py-3.5 flex justify-between items-center gap-3">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl flex items-center justify-center text-white shadow-md shadow-blue-600/20 shrink-0">
+                    <i class="fa-solid fa-magnifying-glass-location text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-extrabold text-xl tracking-tight leading-none text-slate-900">
+                        Campus<span class="text-blue-600">Find</span>
+                    </h1>
+                    <p class="text-[11px] font-medium text-slate-500 mt-1 line-clamp-1">
+                        IET • University of Calicut
+                    </p>
+                </div>
+            </div>
+            <button onclick="openModal()" class="bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all text-white px-4 py-2.5 rounded-2xl text-sm font-semibold shadow-sm shadow-blue-600/20 flex items-center gap-2 shrink-0">
+                <i class="fa-solid fa-plus"></i>
+                <span>Post Item</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- College Hero Banner -->
+    <div class="bg-gradient-to-r from-blue-700 via-blue-600 to-indigo-700 text-white relative overflow-hidden">
+        <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]"></div>
+        <div class="max-w-6xl mx-auto px-4 py-6 sm:py-8 relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="flex items-start sm:items-center gap-4">
+                <div class="w-12 h-12 sm:w-14 sm:h-14 bg-white/15 backdrop-blur-sm border border-white/20 rounded-2xl flex items-center justify-center text-2xl shrink-0">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                </div>
+                <div>
+                    <span class="inline-block px-2.5 py-0.5 rounded-full bg-white/15 text-blue-50 text-[11px] font-semibold uppercase tracking-wider mb-1.5">
+                        Official Campus Portal
+                    </span>
+                    <h2 class="font-bold text-lg sm:text-xl leading-snug">
+                        Institute of Engineering and Technology, Calicut University
+                    </h2>
+                    <p class="text-blue-100 text-xs sm:text-sm mt-1">
+                        Helping students, faculty & staff reunite with lost belongings across campus.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="max-w-6xl w-full mx-auto px-4 py-6 flex-1">
+        
+        <!-- Interactive Stats / Status Filter Cards -->
+        <div class="grid grid-cols-3 gap-3 sm:gap-4 mb-6">
+            <button onclick="setStatusFilter('all')" id="stat-all" class="stat-card bg-white p-3.5 sm:p-4 rounded-2xl border-2 border-blue-600 shadow-sm text-center transition-all hover:shadow-md">
+                <p class="text-2xl sm:text-3xl font-extrabold text-blue-600" id="totalCount">0</p>
+                <p class="text-xs font-semibold text-slate-600 mt-0.5">All Active</p>
+            </button>
+            <button onclick="setStatusFilter('Lost')" id="stat-Lost" class="stat-card bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-sm text-center transition-all hover:border-red-300 hover:shadow-md">
+                <p class="text-2xl sm:text-3xl font-extrabold text-red-500" id="lostCount">0</p>
+                <p class="text-xs font-semibold text-slate-600 mt-0.5">😟 Lost</p>
+            </button>
+            <button onclick="setStatusFilter('Found')" id="stat-Found" class="stat-card bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-sm text-center transition-all hover:border-emerald-300 hover:shadow-md">
+                <p class="text-2xl sm:text-3xl font-extrabold text-emerald-600" id="foundCount">0</p>
+                <p class="text-xs font-semibold text-slate-600 mt-0.5">😊 Found</p>
+            </button>
+        </div>
+
+        <!-- Search & Category Filter Controls -->
+        <div class="bg-white p-4 rounded-3xl border border-slate-200/80 shadow-sm mb-6 space-y-3.5">
+            <div class="relative">
+                <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                <input id="searchInput" oninput="searchItems(this.value)" placeholder="Search by item, location, or department (e.g., ID Card, Canteen, S8 CSE)..." class="w-full bg-slate-50 border border-slate-200 pl-11 pr-10 py-3 rounded-2xl text-sm outline-none focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all">
+                <button id="clearSearchBtn" onclick="clearSearch()" class="hidden absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1">
+                    <i class="fa-solid fa-circle-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Category Pills -->
+            <div class="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+                <button onclick="filterCategory('all', this)" class="filter-btn bg-slate-900 text-white px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all">
+                    All Categories
+                </button>
+                <button onclick="filterCategory('ID Card', this)" class="filter-btn bg-slate-100 hover:bg-slate-200/70 text-slate-700 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all">
+                    🪪 ID Card
+                </button>
+                <button onclick="filterCategory('Bottle', this)" class="filter-btn bg-slate-100 hover:bg-slate-200/70 text-slate-700 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all">
+                    🍶 Bottle
+                </button>
+                <button onclick="filterCategory('Keys', this)" class="filter-btn bg-slate-100 hover:bg-slate-200/70 text-slate-700 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all">
+                    🔑 Keys
+                </button>
+                <button onclick="filterCategory('Electronics', this)" class="filter-btn bg-slate-100 hover:bg-slate-200/70 text-slate-700 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all">
+                    💻 Electronics
+                </button>
+                <button onclick="filterCategory('Books & Notes', this)" class="filter-btn bg-slate-100 hover:bg-slate-200/70 text-slate-700 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all">
+                    📚 Books & Notes
+                </button>
+                <button onclick="filterCategory('Others', this)" class="filter-btn bg-slate-100 hover:bg-slate-200/70 text-slate-700 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all">
+                    📦 Others
+                </button>
+            </div>
+        </div>
+
+        <!-- Items Grid -->
+        <div id="itemsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-200/80 bg-white mt-12 py-6 px-4 text-center">
+        <p class="text-xs text-slate-400">Built for the students & staff of</p>
+        <p class="text-sm font-bold text-slate-700 mt-0.5">Institute of Engineering and Technology, Calicut University</p>
+        <p class="text-xs text-slate-400 mt-1">Lost something? Post it here. Found something? Help return it.</p>
+    </footer>
+
+    <!-- Post Item Modal -->
+    <div id="postModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-40 flex items-end sm:items-center justify-center p-0 sm:p-4 transition-opacity">
+        <div class="bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl p-6 max-h-[92vh] overflow-y-auto shadow-2xl">
+            <div class="flex justify-between items-center mb-1">
+                <h2 class="font-extrabold text-lg text-slate-900">Post Lost / Found Item</h2>
+                <button onclick="closeModal()" class="w-9 h-9 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-full flex items-center justify-center transition-colors">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <p class="text-xs text-slate-500 mb-5">Institute of Engineering and Technology, Calicut University</p>
+
+            <div class="space-y-4">
+                <!-- Type Selector -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1.5">What happened?</label>
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <button type="button" id="typeLost" onclick="setType('Lost')" class="bg-red-50 border-2 border-red-500 text-red-600 py-3 rounded-2xl font-bold text-sm transition-all">
+                            😟 I Lost Something
+                        </button>
+                        <button type="button" id="typeFound" onclick="setType('Found')" class="bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 py-3 rounded-2xl font-semibold text-sm transition-all">
+                            😊 I Found Something
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Item Name -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1.5">Item Name *</label>
+                    <input id="itemName" placeholder="Ex: Blue Milton Bottle, IET Student ID Card" class="w-full border border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 p-3 rounded-2xl text-sm outline-none transition-all">
+                </div>
+
+                <!-- Category & Location Row -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1.5">Category</label>
+                        <select id="itemCategory" class="w-full border border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 p-3 rounded-2xl text-sm outline-none bg-white transition-all">
+                            <option value="ID Card">🪪 ID Card</option>
+                            <option value="Bottle">🍶 Bottle</option>
+                            <option value="Keys">🔑 Keys</option>
+                            <option value="Electronics">💻 Electronics</option>
+                            <option value="Books & Notes">📚 Books & Notes</option>
+                            <option value="Others">📦 Others</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1.5">Campus Location *</label>
+                        <input id="itemLocation" placeholder="Ex: Near Canteen, S8 CSE" class="w-full border border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 p-3 rounded-2xl text-sm outline-none transition-all">
+                    </div>
+                </div>
+
+                <!-- Description -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1.5">Identifying Details (Optional)</label>
+                    <textarea id="itemDesc" rows="2" placeholder="Color, brand, stickers, or where you left it for safekeeping..." class="w-full border border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 p-3 rounded-2xl text-sm outline-none transition-all resize-none"></textarea>
+                </div>
+
+                <!-- Contact Info -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1.5">Contact Info (WhatsApp / Phone / Instagram) *</label>
+                    <input id="itemContact" placeholder="Ex: +91 98765 43210 or @rahul_iet" class="w-full border border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 p-3 rounded-2xl text-sm outline-none transition-all">
+                </div>
+
+                <button onclick="addItem()" class="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white py-3.5 rounded-2xl font-bold text-sm shadow-md shadow-blue-600/20 transition-all mt-2">
+                    Publish to Campus Board
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Default initial data tailored for IET Calicut University
+        const defaultItems = [
+            {
+                id: 1,
+                type: 'Lost',
+                name: 'Blue Milton Thermosteel Bottle',
+                category: 'Bottle',
+                location: 'Near Main Canteen, IET',
+                description: 'Has a small tech-fest sticker near the base. Left on the concrete bench.',
+                contact: '@rahul_s8cse',
+                time: '2 hours ago'
+            },
+            {
+                id: 2,
+                type: 'Found',
+                name: 'IET ID Card - Adil Muhammed (CSE)',
+                category: 'ID Card',
+                location: 'Central Library 2nd Floor',
+                description: 'Found near the reference section desk. Handed over to security / available with me.',
+                contact: '98765 43210',
+                time: '5 hours ago'
+            },
+            {
+                id: 3,
+                type: 'Found',
+                name: 'Honda Bike Keys with Black Keychain',
+                category: 'Keys',
+                location: 'IET Two-Wheeler Parking Area',
+                description: 'Found near the Mechanical block entrance gate.',
+                contact: 'Insta: @iet_calicut_updates',
+                time: 'Yesterday'
+            },
+            {
+                id: 4,
+                type: 'Lost',
+                name: 'Casio fx-991EX Scientific Calculator',
+                category: 'Electronics',
+                location: 'Exam Hall 3, Main Academic Block',
+                description: 'Name initials "A.K." scratched lightly on the back cover.',
+                contact: '94470 11223',
+                time: 'Yesterday'
+            }
+        ];
+
+        // Load from localStorage safely
+        let items = [];
+        try {
+            const saved = localStorage.getItem('campusFindItemsIET_v2');
+            items = saved ? JSON.parse(saved) : defaultItems;
+        } catch (e) {
+            items = defaultItems;
+        }
+
+        let currentType = 'Lost';
+        let currentCategory = 'all';
+        let currentStatus = 'all';
+        let searchText = '';
+
+        // Category icon helper
+        const categoryBadges = {
+            'ID Card': '🪪',
+            'Bottle': '🍶',
+            'Keys': '🔑',
+            'Electronics': '💻',
+            'Books & Notes': '📚',
+            'Others': '📦'
+        };
+
+        // Custom Toast Notification (replaces alert())
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            
+            const colors = {
+                success: 'bg-emerald-600 text-white',
+                error: 'bg-red-600 text-white',
+                info: 'bg-slate-900 text-white'
+            };
+
+            const icons = {
+                success: 'fa-circle-check',
+                error: 'fa-circle-exclamation',
+                info: 'fa-clipboard-check'
+            };
+
+            toast.className = `${colors[type] || colors.info} px-4 py-3 rounded-2xl shadow-lg flex items-center gap-2.5 text-xs sm:text-sm font-medium pointer-events-auto transform transition-all duration-300 translate-y-2 opacity-0`;
+            toast.innerHTML = `<i class="fa-solid ${icons[type] || icons.info}"></i><span>${message}</span>`;
+            
+            container.appendChild(toast);
+            
+            // Animate in
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            });
+
+            // Remove after 3 seconds
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Copy Contact to Clipboard using execCommand fallback
+        function copyContact(contactText) {
+            const tempInput = document.createElement('input');
+            tempInput.value = contactText;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            tempInput.setSelectionRange(0, 99999);
+            try {
+                document.execCommand('copy');
+                showToast(`Copied "${contactText}" to clipboard!`, 'info');
+            } catch (err) {
+                showToast(`Contact: ${contactText}`, 'info');
+            }
+            document.body.removeChild(tempInput);
+        }
+
+        // Modal Controls
+        function openModal() {
+            document.getElementById('postModal').classList.remove('hidden');
+            document.getElementById('itemName').focus();
+        }
+
+        function closeModal() {
+            document.getElementById('postModal').classList.add('hidden');
+        }
+
+        // Set Lost vs Found in Modal
+        function setType(t) {
+            currentType = t;
+            const lostBtn = document.getElementById('typeLost');
+            const foundBtn = document.getElementById('typeFound');
+            
+            if (t === 'Lost') {
+                lostBtn.className = 'bg-red-50 border-2 border-red-500 text-red-600 py-3 rounded-2xl font-bold text-sm transition-all';
+                foundBtn.className = 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 py-3 rounded-2xl font-semibold text-sm transition-all';
+            } else {
+                foundBtn.className = 'bg-emerald-50 border-2 border-emerald-500 text-emerald-600 py-3 rounded-2xl font-bold text-sm transition-all';
+                lostBtn.className = 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 py-3 rounded-2xl font-semibold text-sm transition-all';
+            }
+        }
+
+        // Add New Item
+        function addItem() {
+            const name = document.getElementById('itemName').value.trim();
+            const cat = document.getElementById('itemCategory').value;
+            const loc = document.getElementById('itemLocation').value.trim();
+            const desc = document.getElementById('itemDesc').value.trim();
+            const contact = document.getElementById('itemContact').value.trim();
+
+            if (!name || !loc || !contact) {
+                showToast('Please fill in Item Name, Location, and Contact Info.', 'error');
+                return;
+            }
+
+            const newItem = {
+                id: Date.now(),
+                type: currentType,
+                name,
+                category: cat,
+                location: loc,
+                description: desc,
+                contact,
+                time: 'Just now'
+            };
+
+            items.unshift(newItem);
+            saveItems();
+
+            // Reset form
+            document.getElementById('itemName').value = '';
+            document.getElementById('itemLocation').value = '';
+            document.getElementById('itemDesc').value = '';
+            document.getElementById('itemContact').value = '';
+            
+            closeModal();
+            render();
+            showToast(`${currentType} item posted to CampusFind!`, 'success');
+        }
+
+        // Resolve / Remove Item
+        function resolveItem(id) {
+            items = items.filter(item => item.id !== id);
+            saveItems();
+            render();
+            showToast('Item marked as resolved & removed from active board.', 'success');
+        }
+
+        function saveItems() {
+            try {
+                localStorage.setItem('campusFindItemsIET_v2', JSON.stringify(items));
+            } catch (e) {
+                console.warn('Could not save to localStorage');
+            }
+        }
+
+        // Filter by Status (All / Lost / Found)
+        function setStatusFilter(status) {
+            currentStatus = status;
+            document.querySelectorAll('.stat-card').forEach(card => {
+                card.classList.remove('border-2', 'border-blue-600', 'border-red-500', 'border-emerald-600');
+                card.classList.add('border', 'border-slate-200');
+            });
+
+            const activeCard = document.getElementById(`stat-${status}`);
+            activeCard.classList.remove('border', 'border-slate-200');
+            activeCard.classList.add('border-2');
+            if (status === 'all') activeCard.classList.add('border-blue-600');
+            if (status === 'Lost') activeCard.classList.add('border-red-500');
+            if (status === 'Found') activeCard.classList.add('border-emerald-600');
+
+            render();
+        }
+
+        // Filter by Category
+        function filterCategory(cat, btnElement) {
+            currentCategory = cat;
+            document.querySelectorAll('.filter-btn').forEach(b => {
+                b.classList.remove('bg-slate-900', 'text-white');
+                b.classList.add('bg-slate-100', 'text-slate-700');
+            });
+            btnElement.classList.remove('bg-slate-100', 'text-slate-700');
+            btnElement.classList.add('bg-slate-900', 'text-white');
+            render();
+        }
+
+        // Search Handler
+        function searchItems(val) {
+            searchText = val.toLowerCase().trim();
+            const clearBtn = document.getElementById('clearSearchBtn');
+            if (searchText.length > 0) {
+                clearBtn.classList.remove('hidden');
+            } else {
+                clearBtn.classList.add('hidden');
+            }
+            render();
+        }
+
+        function clearSearch() {
+            const input = document.getElementById('searchInput');
+            input.value = '';
+            searchItems('');
+            input.focus();
+        }
+
+        // Escape HTML to prevent XSS
+        function escapeHTML(str) {
+            if (!str) return '';
+            return str.replace(/[&<>'"]/g, tag => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                "'": '&#39;',
+                '"': '&quot;'
+            }[tag]));
+        }
+
+        // Render Cards & Stats
+        function render() {
+            const grid = document.getElementById('itemsGrid');
+            
+            let filtered = items;
+            if (currentStatus !== 'all') {
+                filtered = filtered.filter(i => i.type === currentStatus);
+            }
+            if (currentCategory !== 'all') {
+                filtered = filtered.filter(i => i.category === currentCategory);
+            }
+            if (searchText) {
+                filtered = filtered.filter(i => 
+                    (`${i.name} ${i.location} ${i.category} ${i.description || ''}`).toLowerCase().includes(searchText)
+                );
+            }
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full text-center py-14 px-4 bg-white rounded-3xl border border-slate-200/80">
+                        <div class="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-3">🔍</div>
+                        <h3 class="font-bold text-base text-slate-800">No matching items found</h3>
+                        <p class="text-xs text-slate-500 mt-1 max-w-xs mx-auto">Try clearing your filters or post a new notice if you lost or found something on campus.</p>
+                        <button onclick="openModal()" class="mt-4 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-all">
+                            + Post an Item
+                        </button>
+                    </div>
+                `;
+            } else {
+                grid.innerHTML = filtered.map(item => {
+                    const isLost = item.type === 'Lost';
+                    const badgeStyle = isLost 
+                        ? 'bg-red-50 text-red-600 border border-red-200/80' 
+                        : 'bg-emerald-50 text-emerald-600 border border-emerald-200/80';
+                    const emoji = categoryBadges[item.category] || '📦';
+                    const safeContact = escapeHTML(item.contact);
+
+                    return `
+                        <article class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
+                            <div>
+                                <!-- Top Row: Status & Timestamp -->
+                                <div class="flex justify-between items-center gap-2 mb-3">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-xs px-2.5 py-1 rounded-xl font-bold ${badgeStyle}">
+                                            ${isLost ? '😟 Lost' : '😊 Found'}
+                                        </span>
+                                        <span class="text-xs font-medium bg-slate-100 text-slate-600 px-2.5 py-1 rounded-xl">
+                                            ${emoji} ${escapeHTML(item.category)}
+                                        </span>
+                                    </div>
+                                    <span class="text-[11px] font-medium text-slate-400 shrink-0">${escapeHTML(item.time)}</span>
+                                </div>
+
+                                <!-- Title & Location -->
+                                <h3 class="font-bold text-base text-slate-900 leading-snug mb-1.5">${escapeHTML(item.name)}</h3>
+                                <p class="text-xs font-medium text-blue-600 flex items-center gap-1.5 mb-2.5">
+                                    <i class="fa-solid fa-location-dot"></i>
+                                    <span>${escapeHTML(item.location)}</span>
+                                </p>
+
+                                <!-- Optional Description -->
+                                ${item.description ? `<p class="text-xs text-slate-500 leading-relaxed mb-4 bg-slate-50/80 p-2.5 rounded-xl border border-slate-100">${escapeHTML(item.description)}</p>` : '<div class="mb-4"></div>'}
+                            </div>
+
+                            <!-- Footer Actions: Copy Contact & Mark Resolved -->
+                            <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                                <button onclick="copyContact('${safeContact.replace(/'/g, "\\'")}')" class="flex-1 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-700 px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between gap-2 transition-colors group" title="Click to copy contact">
+                                    <span class="truncate"><i class="fa-solid fa-address-book mr-1.5 text-slate-400 group-hover:text-blue-600"></i>${safeContact}</span>
+                                    <i class="fa-regular fa-copy text-slate-400 group-hover:text-blue-600 shrink-0"></i>
+                                </button>
+                                <button onclick="resolveItem(${item.id})" class="bg-white hover:bg-emerald-50 text-slate-400 hover:text-emerald-600 border border-slate-200 hover:border-emerald-200 px-2.5 py-2 rounded-xl text-xs font-semibold transition-colors shrink-0" title="Mark as Returned / Resolved">
+                                    <i class="fa-solid fa-check"></i>
+                                </button>
+                            </div>
+                        </article>
+                    `;
+                }).join('');
+            }
+
+            // Update Stats
+            document.getElementById('totalCount').innerText = items.length;
+            document.getElementById('lostCount').innerText = items.filter(i => i.type === 'Lost').length;
+            document.getElementById('foundCount').innerText = items.filter(i => i.type === 'Found').length;
+        }
+
+        // Initial Render
+        render();
+    </script>
+</body>
+</html>
